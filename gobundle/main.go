@@ -29,14 +29,31 @@ func init() {
 	gobundle.Setup.Application.ResourceTar, err = gzip.NewReader(bytes.NewReader(_data))
 	if err != nil { panic(err) }
 }
-`} // filebits end
+`}
 
-type ByteWriter struct {
+type GoBundleWriter struct {
+	*os.File
 	count int
-	other io.Writer
 }
 
-func (bw *ByteWriter) Write(p []byte) (n int, err error) {
+func Open(path string) (bw *GoBundleWriter, err error) {
+	file, err := os.OpenFile(path, os.O_WRONLY | os.O_CREATE | os.O_TRUNC, 0644)
+	if err != nil { return }
+	
+	bw = &GoBundleWriter{File: file}
+	
+	_, err = bw.File.WriteString(filebits[0])
+	return
+}
+
+func (bw *GoBundleWriter) Close() (err error) {
+	_, err = bw.File.WriteString(filebits[1])
+	if err != nil { return }
+	
+	return bw.File.Close()
+}
+
+func (bw *GoBundleWriter) Write(p []byte) (n int, err error) {
 	for _, b := range p {
 		err = bw.WriteByte(b)
 		if err != nil { return }
@@ -45,24 +62,26 @@ func (bw *ByteWriter) Write(p []byte) (n int, err error) {
 	return
 }
 
-func (bw *ByteWriter) WriteByte(b byte) (err error) {
+func (bw *GoBundleWriter) WriteByte(b byte) (err error) {
 	if bw.count > 0 && bw.count % 256 == 0 {
-		_, err = fmt.Fprint(bw.other, "\n")
+		_, err = fmt.Fprint(bw.File, "\n")
 		if err != nil { return }
 	}
 	if bw.count % 16 == 0 {
-		_, err = fmt.Fprint(bw.other, "\n\t")
+		_, err = fmt.Fprint(bw.File, "\n\t")
 		if err != nil { return }
 	} else if bw.count % 4 == 0 {
-		_, err = fmt.Fprint(bw.other, "   ")
+		_, err = fmt.Fprint(bw.File, "   ")
 		if err != nil { return }
 	}
-	_, err = fmt.Fprintf(bw.other, "0x%02X, ", b)
+	_, err = fmt.Fprintf(bw.File, "0x%02X, ", b)
 	bw.count++
 	return err
 }
 
 func main() {
+	file := flag.String("file", "", "Specify a file to tar to instead of writing a bundle.go file in the project.")
+	
 	flag.Parse()
 	
 	wd, err := os.Getwd()
@@ -82,14 +101,17 @@ func main() {
 		bundlepath := filepath.Join(pkg.Dir, "bundle.go")
 		fmt.Println("\tWriting file ", bundlepath)
 		
-		bundle, err := os.OpenFile(bundlepath, os.O_WRONLY | os.O_CREATE | os.O_TRUNC, 0644)
-		if err != nil { panic(err) }
+		var dest io.WriteCloser
 		
-		_, err = bundle.WriteString(filebits[0])
+		if *file == "" {
+			dest, err = Open(bundlepath)
+		} else {
+			dest, err = os.OpenFile(*file, os.O_WRONLY | os.O_CREATE | os.O_TRUNC, 0644)
+		}
 		if err != nil { panic(err) }
 		
 		bundledir := filepath.Join(pkg.Dir, "bundle")
-		zipwr, err := gzip.NewWriterLevel(&ByteWriter{other: bundle}, gzip.BestCompression)
+		zipwr, err := gzip.NewWriterLevel(dest, gzip.BestCompression)
 		if err != nil { panic(err) }
 		
 		tarwr := tar.NewWriter(zipwr)
@@ -101,10 +123,7 @@ func main() {
 		err = zipwr.Close()
 		if err != nil { panic(err) }
 		
-		_, err = bundle.WriteString(filebits[1])
-		if err != nil { panic(err) }
-		
-		err = bundle.Close()
+		err = dest.Close()
 		if err != nil { panic(err) }
 	}
 }
