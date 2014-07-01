@@ -19,7 +19,7 @@ set `gobundle.Setup.Application.Name` to your application name, and call
 
   * --conf: sets the configuration directory path; default value depends on the OS
   * --data: sets the data directory path; default value depends on the OS
-  * --unpack <arg>:
+  * --unpack &lt;arg&gt;:
     * suppress: Don't unpack
     * unpack[,force]: Do unpack
     * detect[,force]: Unpack if the conf and data are non-extant
