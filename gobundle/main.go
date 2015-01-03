@@ -134,8 +134,8 @@ func writeDir(wr *tar.Writer, prefix, directory string) {
 	matches, err := filepath.Glob(filepath.Join(directory, "*"))
 	if err != nil { panic(err) }
 	
-	if !strings.HasSuffix(prefix, "/") {
-		prefix += "/"
+	if !strings.HasSuffix(prefix, string(os.PathSeparator)) {
+		prefix += string(os.PathSeparator)
 	}
 	
 	for _, match := range matches {
