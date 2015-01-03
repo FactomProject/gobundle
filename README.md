@@ -13,7 +13,7 @@ to a byte array in `<pkg dir>/bundle.go`. The available flags are:
 actual tar, as opposed to the golang byte array literal that is written to
 bundle.go. This is primarily for testing purposes.
 
-To use the gobundle package, `import "github.com/firelizzard18/gobundle"`,
+To use the gobundle package, `import "github.com/FactomProject/gobundle"`,
 set `gobundle.Setup.Application.Name` to your application name, and call
 `gobundle.Init()` (which calls `flag.Parse()`). The available flags are:
 

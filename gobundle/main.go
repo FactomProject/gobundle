@@ -18,7 +18,7 @@ var filebits = []string{
 import (
 	"bytes"
 	"compress/gzip"
-	"github.com/firelizzard18/gobundle"
+	"github.com/FactomCode/gobundle"
 )
 
 var _data = []byte{`,`
